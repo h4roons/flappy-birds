@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Playable Ad</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #70c5ce;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            background-color: #70c5ce;
+            border: 1px solid #000;
+            display: none;
+        }
+
+        .play-now, .play-again {
+            position: absolute;
+            background-color: #ffcc00;
+            padding: 15px 30px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .play-now {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .play-again {
+            top: 10px;
+            right: 10px;
+            display: none;
+        }
+
+        .play-now:hover, .play-again:hover {
+            background-color: #ffa500;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="flappyBirdCanvas"></canvas>
+    <div class="play-now" onclick="startGame()">Play Now</div>
+    <div class="play-again" onclick="startGame()">Play Again</div>
+
+    <script>
+        const canvas = document.getElementById("flappyBirdCanvas");
+        const ctx = canvas.getContext("2d");
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Initial resize
+
+        let bird = {
+            x: 50,
+            y: window.innerHeight / 2,
+            width: 20,
+            height: 20,
+            gravity: 0.4,
+            lift: -8,
+            velocity: 0
+        };
+
+        let pipes = [];
+        let pipeWidth = 40;
+        let pipeGap = 150; // Increased pipe gap for mobile
+        let pipeSpeed = 2;
+        let frame = 0;
+        let score = 0;
+        let gameStarted = false;
+
+        function resetGame() {
+            bird.y = window.innerHeight / 2;
+            bird.velocity = 0;
+            pipes = [];
+            score = 0;
+            frame = 0;
+            gameStarted = false;
+            document.querySelector('.play-again').style.display = 'block';
+        }
+
+        function startGame() {
+            resetGame();
+            document.querySelector('.play-now').style.display = 'none';
+            document.querySelector('.play-again').style.display = 'none';
+            canvas.style.display = 'block';
+            gameStarted = true;
+            requestAnimationFrame(updateGame);
+        }
+
+        function updateGame() {
+            if (!gameStarted) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw bird
+            ctx.fillStyle = "yellow";
+            ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+
+            // Bird physics
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            // Create pipes
+            if (frame % 90 === 0) {
+                let pipeY = Math.random() * (canvas.height - pipeGap - 50) + 25;
+                pipes.push({ x: canvas.width, y: pipeY });
+            }
+
+            // Move pipes
+            for (let i = 0; i < pipes.length; i++) {
+                pipes[i].x -= pipeSpeed;
+
+                // Top pipe
+                ctx.fillStyle = "green";
+                ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].y);
+
+                // Bottom pipe
+                ctx.fillRect(pipes[i].x, pipes[i].y + pipeGap, pipeWidth, canvas.height);
+
+                // Check collision
+                if (
+                    bird.x < pipes[i].x + pipeWidth &&
+                    bird.x + bird.width > pipes[i].x &&
+                    (bird.y < pipes[i].y || bird.y + bird.height > pipes[i].y + pipeGap)
+                ) {
+                    resetGame();
+                    return;
+                }
+
+                // Remove pipes that are out of the screen
+                if (pipes[i].x + pipeWidth < 0) {
+                    pipes.splice(i, 1);
+                    i--;
+                    score++;
+                }
+            }
+
+            // Check if bird hits the ground or flies off-screen
+            if (bird.y + bird.height > canvas.height || bird.y < 0) {
+                resetGame();
+                return;
+            }
+
+            // Draw score
+            ctx.fillStyle = "white";
+            ctx.font = "24px Arial";
+            ctx.fillText(`Score: ${score}`, 10, 40);
+
+            frame++;
+            requestAnimationFrame(updateGame);
+        }
+
+        // Make the bird jump
+        window.addEventListener("click", () => {
+            if (gameStarted) {
+                bird.velocity = bird.lift;
+            }
+        });
+    </script>
+</body>
+</html>
